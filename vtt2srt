@@ -1,26 +1,32 @@
-#!/bin/bash
-#Developed by xubuntu4iran
-#Licensed under NewBSD
+#! /usr/bin/env bash
 
-data=$(cat "$@" |sed 1d|sed 's/\([0-9]\)\.\([0-9]\)/\1,\2/g');
+# vtt2srt
 
-blc=$(echo "$data"|sed -n 1p)
-lc=$(echo "$data"|wc -l)
-(( ++lc ));
+# remove WEBVTT file header
+# convert time format from ss.SSS to ss,SSS
+# add empty hours, for example, convert 12:34.567 to 00:12:34,567
+# keep existing index numbers
 
-(( i=1 ));
-(( n=1 ));
-while (( $i <= $lc ));do
- ld=$(echo "$data"|sed -n "$i"p);
- 
- if [[ "$ld" == "$blc" ]];then
- 	echo "$ld
-$n"
-(( ++n ));
- else 
- 	echo "$ld"
- fi
- 
- 
- (( ++i ));
- done
+# todo: remove vtt comments
+# todo: convert \r and \r\n to \n
+# todo: add empty minutes
+# todo: add tests
+
+# license = MIT
+
+set -eu
+
+for i in "$@"
+do
+
+echo "i $i"
+
+o="$i.srt"
+
+<"$i" sed 's/^WEBVTT$//' \
+| perl -p -00 -e 's/^(?:([0-9]+)\n)?([0-9]{2}:)?([0-9]{2}:[0-9]{2})\.([0-9]{3}) --> ([0-9]{2}:)?([0-9]{2}:[0-9]{2})\.([0-9]{3})\n/($1 ? $1 : ++$n).qq(\n).($2 ? $2 : q(00:)).$3.q(,).$4.q( --> ).($5 ? $5 : q(00:)).$6.q(,).$7.qq(\n)/e' \
+>"$o"
+
+echo "o $o"
+
+done
